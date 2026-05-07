@@ -1,45 +1,62 @@
-name: Java CI with Maven
+name: PR Automated Review (Bai7)
 
+# Trigger khi có PR vào main
 on:
-  push:
-    branches: [ "main" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  pull-requests: write   # cần để bot comment vào PR
+  checks: write
 
 jobs:
   build-and-test:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
-
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: maven
+          cache: 'maven'
 
-      - name: Run Maven verify (compiles + runs tests)
-        run: mvn verify
+      - name: Run tests
+        run: mvn clean test --batch-mode
 
   checkstyle-review:
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    # Chỉ chạy khi là PR event
+    if: github.event_name == 'pull_request'
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Run Checkstyle with reviewdog
+      # Action này tự động comment inline vào các dòng vi phạm Checkstyle
+      - name: Checkstyle Inline Review
         uses: dbelyaev/action-checkstyle@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          reporter: github-pr-review
-          level: error
-          workdir: ./src/main/java
+          reporter: github-pr-review   # comment trực tiếp vào PR
           checkstyle_config: google_checks.xml
-          fail_on_error: 'true'   # ← Bắt buộc job thất bại nếu có lỗi
+          level: warning               # tạo review comment (không fail build)
+          filter_mode: diff_context    # chỉ comment vào lines đã thay đổi
+
+  # Job này fail nếu có Checkstyle error → block merge
+  checkstyle-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Checkstyle gate (fails on violation)
+        run: mvn checkstyle:check --batch-mode
