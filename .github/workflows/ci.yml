@@ -37,7 +37,7 @@ jobs:
 
       # Action này tự động comment inline vào các dòng vi phạm Checkstyle
       - name: Checkstyle Inline Review
-        uses: dbelyaev/action-checkstyle@v1.11.1
+        uses: dbelyaev/action-checkstyle@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           reporter: github-pr-review   # comment trực tiếp vào PR
