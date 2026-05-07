@@ -2,9 +2,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.*;
 
-/**
- * Lớp tiện ích cung cấp các phép tính cơ bản.
- */
+
 public class MathUtils {
   // Thay đổi nhỏ trong code để test caching
   // Logger là static final: một instance duy nhất per class, thread-safe.
